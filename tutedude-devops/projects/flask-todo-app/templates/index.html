@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple To-Do</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        input, button {
+            padding: 10px;
+            margin: 5px 0;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        th {
+            background: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+
+<h2>To-Do</h2>
+
+<form id="form">
+    <input id="name" placeholder="Item name" required>
+    <input id="desc" placeholder="Description" required>
+    <button>Add Item</button>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="body"></tbody>
+</table>
+
+<script>
+
+// ADD
+document.getElementById("form").onsubmit = async (e) => {
+    e.preventDefault();
+
+    const nameInput = document.getElementById("name");
+    const descInput = document.getElementById("desc");
+
+    const data = {
+        itemUUID: crypto.randomUUID(),
+        itemName: nameInput.value,
+        itemDescription: descInput.value
+    };
+
+    await fetch('/submittodoitem', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+
+    nameInput.value = "";
+    descInput.value = "";
+
+    load();
+};
+
+// LOAD
+async function load() {
+    const res = await fetch('/gettodoitems');
+    const result = await res.json();
+
+    const body = document.getElementById("body");
+    body.innerHTML = "";
+
+    if (result.data.length === 0) {
+        body.innerHTML = "<tr><td colspan='3'>No items</td></tr>";
+        return;
+    }
+
+    result.data.forEach(item => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${item.itemName}</td>
+            <td>${item.itemDescription}</td>
+            <td>
+                <button onclick="edit('${item.itemUUID}')">Edit</button>
+                <button onclick="del('${item.itemUUID}')">Delete</button>
+            </td>
+        `;
+
+        body.appendChild(row);
+    });
+}
+
+// DELETE
+async function del(id) {
+    await fetch('/deleteItem', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({itemUUID: id})
+    });
+
+    load();
+}
+
+// EDIT
+async function edit(id) {
+    const newName = prompt("New name:");
+    const newDesc = prompt("New description:");
+
+    if (!newName || !newDesc) return;
+
+    await fetch('/editItem', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            itemUUID: id,
+            itemName: newName,
+            itemDescription: newDesc
+        })
+    });
+
+    load();
+}
+
+// AUTO LOAD
+load();
+
+</script>
+
+</body>
+</html>
