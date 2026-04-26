@@ -47,5 +47,17 @@ def submit():
 def success():
     return render_template('success.html')
 
+@app.route('/submittodoitem', methods=['POST'])
+def submit_todo():
+    item_name = request.form['itemName']
+    item_desc = request.form['itemDescription']
+
+    collection.insert_one({
+        "itemName": item_name,
+        "itemDescription": item_desc
+    })
+
+    return "Item stored successfully"
+
 if __name__ == '__main__':
     app.run(debug=True)
